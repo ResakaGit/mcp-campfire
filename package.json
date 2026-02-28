@@ -1,6 +1,6 @@
 {
   "name": "mcp-campfire",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MCP server base campfire (spec 2025-11-25, Cursor 2026)",
   "type": "module",
   "exports": {

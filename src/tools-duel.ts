@@ -69,6 +69,8 @@ export const strikeArgumentInputSchema = z
   })
   .strict();
 
+export type StrikeArgumentInput = z.infer<typeof strikeArgumentInputSchema>;
+
 export async function strikeArgumentTool(
   duelApp: DuelApp,
   args: z.infer<typeof strikeArgumentInputSchema>
@@ -90,6 +92,8 @@ export const holdTheLineInputSchema = z
     surrender: z.boolean().describe("True if the Defender surrenders to the evidence"),
   })
   .strict();
+
+export type HoldTheLineInput = z.infer<typeof holdTheLineInputSchema>;
 
 export async function holdTheLineTool(
   duelApp: DuelApp,
@@ -114,6 +118,8 @@ export const deliverVerdictInputSchema = z
     required_plan_mutation: z.string().describe("Mutation to apply to the master BattlePlan"),
   })
   .strict();
+
+export type DeliverVerdictInput = z.infer<typeof deliverVerdictInputSchema>;
 
 export async function deliverVerdictTool(
   duelApp: DuelApp,
@@ -151,6 +157,8 @@ export const abandonDuelInputSchema = z
   })
   .strict();
 
+export type AbandonDuelInput = z.infer<typeof abandonDuelInputSchema>;
+
 export async function abandonDuelTool(
   duelApp: DuelApp,
   args: z.infer<typeof abandonDuelInputSchema>
@@ -174,6 +182,8 @@ export const speakToPartyInputSchema = z
     author: z.string().optional().describe("Message author"),
   })
   .strict();
+
+export type SpeakToPartyInput = z.infer<typeof speakToPartyInputSchema>;
 
 export async function speakToPartyTool(
   campfireApp: CampfireApp,
@@ -199,6 +209,8 @@ export const updateBattlePlanInputSchema = z
     content: z.string().describe("New BattlePlan content"),
   })
   .strict();
+
+export type UpdateBattlePlanInput = z.infer<typeof updateBattlePlanInputSchema>;
 
 export async function updateBattlePlanTool(
   duelApp: DuelApp,

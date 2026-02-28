@@ -46,6 +46,10 @@ Requirements: workspace root must contain `mcp-campfire`, `npm run build` must h
 - **Development:** `npm run dev` (tsx watch).
 - **Tests:** `npm test` (Vitest).
 
+**Cursor skills:** This repo includes `.cursor/skills/mcp-campfire/SKILL.md` so that when you clone it, Cursor can use the skill for registration, config (including Redis), and tool routing. No extra setup needed.
+
+**Mission use cases:** For reference on orchestration-style MCPs (Quest/Campaign, WorldEvent loop, DDD + Hexagonal), see [docs/MISSION_RPG_QUEST_ORCHESTRATOR.md](docs/MISSION_RPG_QUEST_ORCHESTRATOR.md). That document describes a separate "RPG Quest Orchestrator" core domain and state machine; it is included here as a reusable mission blueprint.
+
 ---
 
 ## Using mcp-campfire from another project

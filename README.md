@@ -1,23 +1,23 @@
 # mcp-campfire
 
-Servidor MCP para planificación colaborativa entre agentes: fogatas, mensajes, BattlePlan compartido y protocolo ceremonial de Duelo con resolución ejecutable.
+MCP server for collaborative planning among agents: campfires, messages, shared BattlePlan, and a ceremonial Duel protocol with executable resolution.
 
 ---
 
-Cuando varios agentes debaten en Cursor, el consenso puede quedar en loop. **mcp-campfire** aporta un bounded context claro: sesiones de fogata donde se discute, y un Duelo con máquina de estados (Retador vs Defensor, Juez decide) que corta debates infinitos y produce un fallo aplicable al plan. No es oráculo ni magia: es contrato. Lo que sigue es la realidad del producto, sin ocultar límites.
+When multiple agents debate in Cursor, consensus can loop forever. **mcp-campfire** provides a clear bounded context: campfire sessions where discussion happens, and a Duel with a state machine (Challenger vs Defender, Judge decides) that cuts infinite debates and produces an applicable ruling on the plan. Not an oracle or magic: it's a contract. What follows is the reality of the product, with no hidden limits.
 
 ---
 
-## Qué es y para quién
+## What it is and who it's for
 
-**mcp-campfire** es un servidor MCP (spec 2025-11-25) que expone:
+**mcp-campfire** is an MCP server (spec 2025-11-25) that exposes:
 
-- **Fogatas (fires):** sesiones de planificación identificadas por `fireId`.
-- **Mensajes:** publicar y listar mensajes por fogata.
-- **BattlePlan:** contenido compartido por fogata; actualizable cuando no hay duelo activo.
-- **Duelo:** protocolo ceremonial en el que un Retador desafía a un Defensor; un tercer agente (Juez) toma juramento, escucha argumentos y entrega veredicto con mutación obligatoria al BattlePlan.
+- **Campfires (fires):** planning sessions identified by `fireId`.
+- **Messages:** post and list messages per campfire.
+- **BattlePlan:** shared content per campfire; updatable when no duel is active.
+- **Duel:** ceremonial protocol where a Challenger challenges a Defender; a third agent (Judge) takes an oath, hears arguments, and delivers a verdict with mandatory mutation to the BattlePlan.
 
-**Audiencia:** devs que orquestan múltiples agentes en Cursor y quieren resolución ejecutable en lugar de debates abiertos. Compatible con Cursor 2026 y clientes MCP que usen spec 2025-11-25.
+**Audience:** devs orchestrating multiple agents in Cursor who want executable resolution instead of open-ended debate. Compatible with Cursor 2026 and MCP clients using spec 2025-11-25.
 
 ---
 
@@ -30,9 +30,9 @@ npm run build
 npm start
 ```
 
-El servidor usa transporte **stdio**: lee JSON-RPC por stdin y escribe por stdout. Cursor lo arranca al conectar el MCP.
+The server uses **stdio** transport: it reads JSON-RPC from stdin and writes to stdout. Cursor starts it when connecting the MCP.
 
-**Registro en Cursor:** en `.cursor/mcp.json` (raíz del workspace):
+**Cursor registration:** in `.cursor/mcp.json` (workspace root):
 
 ```json
 "mcp-campfire": {
@@ -41,71 +41,97 @@ El servidor usa transporte **stdio**: lee JSON-RPC por stdin y escribe por stdou
 }
 ```
 
-Requisitos: workspace con raíz en el repo que contiene `mcp-campfire`, `npm run build` ejecutado, **reiniciar Cursor** tras cambiar `mcp.json`.
+Requirements: workspace root must contain `mcp-campfire`, `npm run build` must have been run, and **restart Cursor** after changing `mcp.json`.
 
-- **Desarrollo:** `npm run dev` (tsx en watch).
+- **Development:** `npm run dev` (tsx watch).
 - **Tests:** `npm test` (Vitest).
 
 ---
 
-## Tabla de tools
+## Using mcp-campfire from another project
 
-| Tool | Parámetros clave | Propósito |
-|------|------------------|-----------|
-| `campfire_ping` | — | Health check; devuelve pong y timestamp. |
-| `campfire_echo` | `message` | Prueba de conectividad; devuelve el mensaje. |
-| `campfire_get_or_create_fire` | `fireId` | Obtiene o crea una fogata (sesión). |
-| `campfire_post_message` | `fireId`, `text`, `author`? | Publica mensaje en fogata (sin duelo). |
-| `campfire_list_messages` | `fireId` | Lista mensajes de la fogata. |
-| `campfire_throw_gauntlet` | `fireId`, `challenger_name`, `target_name`, `thesis_of_attack` | Declara duelo; estado PENDING; bloquea escritura general. |
-| `campfire_take_oath_of_judgement` | `fireId`, `character_name` | Juez (tercer agente) toma juramento; activa duelo. |
-| `campfire_strike_argument` | `fireId`, `character_name`, `technical_evidence` | Retador: ataque técnico. |
-| `campfire_hold_the_line` | `fireId`, `character_name`, `defense_rationale`, `surrender` | Defensor: defensa o rendición. |
-| `campfire_deliver_verdict` | `fireId`, `character_name`, `winner`, `ruling_rationale`, `required_plan_mutation` | Juez: fallo y mutación al BattlePlan. |
-| `campfire_abandon_duel` | `fireId` | Abandona duelo; vuelve a DEBATING sin mutar plan. |
-| `campfire_speak_to_party` | `fireId`, `text`, `author`? | Publicar en fogata; bloqueada durante duelo (PENDING/ACTIVE). |
-| `campfire_update_battle_plan` | `fireId`, `content` | Actualizar BattlePlan; bloqueada durante duelo. |
+To use this MCP in a different workspace (e.g. another repo or a project that does not contain mcp-campfire):
 
-`winner` en `campfire_deliver_verdict` es `"challenger"` o `"defender"`.
+1. **Get mcp-campfire**  
+   Clone [ResakaGit/mcp-campfire](https://github.com/ResakaGit/mcp-campfire) into your machine or copy the `mcp-campfire` folder into (or next to) your project.
 
----
+2. **Build**  
+   From the `mcp-campfire` directory run: `npm install && npm run build`.
 
-## Flujo del Duelo
+3. **Register in the other project**  
+   In that project’s workspace root, create or edit `.cursor/mcp.json`. Add an entry under `mcpServers`:
+   ```json
+   "mcp-campfire": {
+     "command": "node",
+     "args": ["/absolute/path/to/mcp-campfire/dist/index.js"]
+   }
+   ```
+   Use the path where `mcp-campfire/dist/index.js` actually lives (absolute path, or path relative to the other project’s root).
 
-- **throw_gauntlet:** Retador declara duelo contra Defensor con una tesis de ataque. Estado → PENDING. Se bloquean `campfire_speak_to_party` y `campfire_update_battle_plan`.
-- **take_oath_of_judgement:** Un tercer agente (Juez) distinto de Retador y Defensor toma juramento. Estado → ACTIVE. Turno al Retador.
-- **strike_argument:** Retador presenta evidencia técnica. Turno al Defensor.
-- **hold_the_line:** Defensor argumenta o se rinde (`surrender: true`). Turno al Juez.
-- **deliver_verdict:** Juez elige ganador y aplica `required_plan_mutation` al BattlePlan. Estado → DEBATING. Desbloqueo de escritura.
-- **Un duelo por fogata.** No hay cola de duelos; el siguiente duelo requiere declarar de nuevo.
-- **Salida de deadlock:** si el Juez nunca aparece o el flujo se corta, usar `campfire_abandon_duel` o depender de timeout externo; no hay recuperación automática.
+4. **Restart Cursor** so it picks up the MCP.
+
+After that, tools are available under server key `mcp-campfire` in that workspace.
 
 ---
 
-## Limitaciones y trade-offs
+## Tools table
 
-- **Persistencia en memoria (Fase 1).** Todo el estado (fogatas, mensajes, duelos, BattlePlan) se pierde al reiniciar el servidor. La arquitectura permite persistencia externa en el futuro; no se prometen fechas.
-- **Honor system en identidades.** `character_name`, `challenger_name`, `target_name` y `author` no están autenticados por tokens. Si un mismo nombre intenta dos roles (p. ej. Retador y Juez), el servidor rechaza con mensaje accionable. Convención entre agentes, no seguridad criptográfica.
-- **Un duelo activo por fogata.** No hay cola ni historial de duelos en esta versión.
-- **Deadlock:** si el Juez no toma juramento o el flujo queda a medias, la única salida explícita es `campfire_abandon_duel`; no hay timeout ni auto-abandono en el servidor.
+| Tool | Key parameters | Purpose |
+|------|----------------|---------|
+| `campfire_ping` | — | Health check; returns pong and timestamp. |
+| `campfire_echo` | `message` | Connectivity test; returns the message. |
+| `campfire_get_or_create_fire` | `fireId` | Get or create a campfire (session). |
+| `campfire_post_message` | `fireId`, `text`, `author`? | Post message to campfire (when no duel). |
+| `campfire_list_messages` | `fireId` | List messages in the campfire. |
+| `campfire_throw_gauntlet` | `fireId`, `challenger_name`, `target_name`, `thesis_of_attack` | Declare duel; state PENDING; blocks general write. |
+| `campfire_take_oath_of_judgement` | `fireId`, `character_name` | Judge (third agent) takes oath; activates duel. |
+| `campfire_strike_argument` | `fireId`, `character_name`, `technical_evidence` | Challenger: technical attack. |
+| `campfire_hold_the_line` | `fireId`, `character_name`, `defense_rationale`, `surrender` | Defender: defense or surrender. |
+| `campfire_deliver_verdict` | `fireId`, `character_name`, `winner`, `ruling_rationale`, `required_plan_mutation` | Judge: ruling and mutation to BattlePlan. |
+| `campfire_abandon_duel` | `fireId` | Abandon duel; returns to DEBATING without mutating plan. |
+| `campfire_speak_to_party` | `fireId`, `text`, `author`? | Post to campfire; blocked during duel (PENDING/ACTIVE). |
+| `campfire_update_battle_plan` | `fireId`, `content` | Update BattlePlan; blocked during duel. |
+
+`winner` in `campfire_deliver_verdict` is `"challenger"` or `"defender"`.
 
 ---
 
-## Sistema de errores
+## Duel flow
 
-Según spec 2025-11-25, los fallos de ejecución de una tool se devuelven **dentro del resultado** con `isError: true`, no como error JSON-RPC, para que el LLM pueda leer el mensaje y corregirse.
-
-- **Errores de negocio/validación** → resultado con `isError: true` y mensaje accionable en `content[].text`.
-- **Errores de protocolo** (tool no encontrada, request mal formado) → error JSON-RPC.
-
-Implementación: `src/errors.ts` (`toolErrorResult`, `ToolError`, `errorToToolResult`). El wrapper en `server.ts` convierte excepciones en `ToolResult` con `isError: true`.
+- **throw_gauntlet:** Challenger declares duel against Defender with a thesis of attack. State → PENDING. `campfire_speak_to_party` and `campfire_update_battle_plan` are blocked.
+- **take_oath_of_judgement:** A third agent (Judge), distinct from Challenger and Defender, takes the oath. State → ACTIVE. Turn goes to Challenger.
+- **strike_argument:** Challenger presents technical evidence. Turn goes to Defender.
+- **hold_the_line:** Defender argues or surrenders (`surrender: true`). Turn goes to Judge.
+- **deliver_verdict:** Judge chooses winner and applies `required_plan_mutation` to the BattlePlan. State → DEBATING. Write is unblocked.
+- **One duel per campfire.** No duel queue; the next duel requires declaring again.
+- **Deadlock exit:** if the Judge never appears or the flow is cut, use `campfire_abandon_duel` or rely on external timeout; there is no automatic recovery.
 
 ---
 
-## Spec y dependencias
+## Limitations and trade-offs
+
+- **In-memory persistence (Phase 1).** All state (campfires, messages, duel state, BattlePlan) is lost on server restart. The architecture allows external persistence in the future; no dates are promised.
+- **Honor system for identities.** `character_name`, `challenger_name`, `target_name`, and `author` are not authenticated by tokens. If the same name attempts two roles (e.g. Challenger and Judge), the server rejects with an actionable message. Convention between agents, not cryptographic security.
+- **One active duel per campfire.** No queue or duel history in this version.
+- **Deadlock:** if the Judge never takes the oath or the flow is left mid-way, the only explicit exit is `campfire_abandon_duel`; there is no server-side timeout or auto-abandon.
+
+---
+
+## Error system
+
+Per spec 2025-11-25, tool execution failures are returned **inside the result** with `isError: true`, not as a JSON-RPC error, so the LLM can read the message and self-correct.
+
+- **Business/validation errors** → result with `isError: true` and actionable message in `content[].text`.
+- **Protocol errors** (tool not found, malformed request) → JSON-RPC error.
+
+Implementation: `src/errors.ts` (`toolErrorResult`, `ToolError`, `errorToToolResult`). The wrapper in `server.ts` converts exceptions to `ToolResult` with `isError: true`.
+
+---
+
+## Spec and dependencies
 
 - **MCP:** [modelcontextprotocol.io/specification/2025-11-25](https://modelcontextprotocol.io/specification/2025-11-25)
-- **Transporte:** stdio (JSON-RPC por stdin/stdout).
-- **SDK:** `@modelcontextprotocol/sdk`; Zod para `inputSchema` de las tools.
+- **Transport:** stdio (JSON-RPC over stdin/stdout).
+- **SDK:** `@modelcontextprotocol/sdk`; Zod for tool `inputSchema`.
 
-Si más adelante el servidor se integra al orchestrator del repo, las tools se invocarán bajo el key del servidor unificado (p. ej. `mcp-orchestrator`).
+If the server is later integrated into the repo's orchestrator, tools will be invoked under the unified server key (e.g. `mcp-orchestrator`).

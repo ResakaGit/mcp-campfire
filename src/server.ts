@@ -70,7 +70,7 @@ export function registerCampfireTools(
   server.registerTool(
     "campfire_echo",
     {
-      description: "Devuelve el mensaje recibido (útil para probar conectividad).",
+      description: "Devuelve el mensaje recibido. Parámetro: message (requerido). Útil para probar conectividad.",
       inputSchema: echoInputSchema,
     },
     wrapToolHandler((args) => echoTool(args))
@@ -81,7 +81,7 @@ export function registerCampfireTools(
     "campfire_get_or_create_fire",
     {
       description:
-        "Gets or creates a fire (planning session) by id. Returns the fire as JSON.",
+        "Obtiene o crea una fogata (sesión de planificación) por id. Parámetro: fireId. Devuelve la fogata en JSON. Usar para iniciar o unirse a una sesión de debate entre agentes.",
       inputSchema: getOrCreateFireInputSchema,
     },
       wrapToolHandler((args) => getOrCreateFireTool(app, args))
@@ -91,7 +91,7 @@ export function registerCampfireTools(
       "campfire_post_message",
       {
         description:
-          "Posts a message to an existing fire. Requires fireId and text; author optional. Returns the created message as JSON.",
+          "Publica un mensaje en una fogata existente. Parámetros: fireId, text, author (opcional). Devuelve el mensaje creado en JSON. Bloqueado durante duelo (usar campfire_speak_to_party está bloqueado entonces).",
         inputSchema: postMessageInputSchema,
       },
       wrapToolHandler((args) => postMessageTool(app, args))
@@ -101,7 +101,7 @@ export function registerCampfireTools(
       "campfire_list_messages",
       {
         description:
-          "Lists messages of a fire by fireId. Returns array of messages as JSON.",
+          "Lista los mensajes de una fogata. Parámetro: fireId. Devuelve un array de mensajes en JSON. Útil para que un agente lea el historial del debate.",
         inputSchema: listMessagesInputSchema,
       },
       wrapToolHandler((args) => listMessagesTool(app, args))
@@ -113,7 +113,7 @@ export function registerCampfireTools(
       "campfire_throw_gauntlet",
       {
         description:
-          "Declares a duel: Challenger (challenger_name) challenges Defender (target_name) with a thesis. Sets state to PENDING and locks general write tools.",
+          "Declara un duelo: el Challenger (challenger_name) reta al Defender (target_name) con una tesis. Parámetros: fireId, challenger_name, target_name, thesis_of_attack. Estado → PENDING; bloquea escritura general.",
         inputSchema: throwGauntletInputSchema,
       },
       wrapToolHandler((args) => throwGauntletTool(duelApp, args))
@@ -122,7 +122,7 @@ export function registerCampfireTools(
       "campfire_take_oath_of_judgement",
       {
         description:
-          "Third agent (Judge) takes the oath. character_name must differ from Challenger and Defender. Activates the duel and gives turn to Challenger.",
+          "Un tercer agente (Juez) presta juramento. Parámetros: fireId, character_name (distinto de Challenger y Defender). Activa el duelo y cede el turno al Challenger.",
         inputSchema: takeOathOfJudgementInputSchema,
       },
       wrapToolHandler((args) => takeOathOfJudgementTool(duelApp, args))
@@ -131,7 +131,7 @@ export function registerCampfireTools(
       "campfire_strike_argument",
       {
         description:
-          "Challenger only, on their turn. Presents the technical attack. Yields turn to Defender.",
+          "Solo el Challenger, en su turno. Presenta el ataque técnico. Parámetros: fireId, character_name, technical_evidence. Cede el turno al Defender.",
         inputSchema: strikeArgumentInputSchema,
       },
       wrapToolHandler((args) => strikeArgumentTool(duelApp, args))
@@ -140,7 +140,7 @@ export function registerCampfireTools(
       "campfire_hold_the_line",
       {
         description:
-          "Defender only, on their turn. Argues in defense or surrenders (surrender: true). Yields turn to Judge.",
+          "Solo el Defender, en su turno. Argumenta en defensa o se rinde (surrender: true). Parámetros: fireId, character_name, defense_rationale, surrender. Cede el turno al Juez.",
         inputSchema: holdTheLineInputSchema,
       },
       wrapToolHandler((args) => holdTheLineTool(duelApp, args))
@@ -149,7 +149,7 @@ export function registerCampfireTools(
       "campfire_deliver_verdict",
       {
         description:
-          "Judge only, on their turn. winner: 'challenger' or 'defender'. Applies required_plan_mutation to BattlePlan and reverts state to DEBATING.",
+          "Solo el Juez, en su turno. Parámetros: fireId, character_name, winner ('challenger'|'defender'), ruling_rationale, required_plan_mutation. Aplica la mutación al BattlePlan y vuelve el estado a DEBATING.",
         inputSchema: deliverVerdictInputSchema,
       },
       wrapToolHandler((args) => deliverVerdictTool(duelApp, args))
@@ -158,7 +158,7 @@ export function registerCampfireTools(
       "campfire_abandon_duel",
       {
         description:
-          "Abandons the duel on the fire. Reverts state to DEBATING without mutating BattlePlan. Deadlock exit if Judge never appears.",
+          "Abandona el duelo en la fogata. Parámetro: fireId. Vuelve el estado a DEBATING sin modificar el BattlePlan. Salida de deadlock si el Juez no aparece.",
         inputSchema: abandonDuelInputSchema,
       },
       wrapToolHandler((args) => abandonDuelTool(duelApp, args))
@@ -167,7 +167,7 @@ export function registerCampfireTools(
       "campfire_speak_to_party",
       {
         description:
-          "Posts a message to the fire. Blocked during duel (PENDING/ACTIVE); returns fixed message.",
+          "Publica un mensaje en la fogata. Parámetros: fireId, text, author (opcional). Bloqueado durante duelo (PENDING/ACTIVE); devuelve mensaje fijo en ese caso.",
         inputSchema: speakToPartyInputSchema,
       },
       wrapToolHandler((args) => speakToPartyTool(app, duelApp, args))
@@ -176,7 +176,7 @@ export function registerCampfireTools(
       "campfire_update_battle_plan",
       {
         description:
-          "Updates the fire's BattlePlan. Blocked during duel (PENDING/ACTIVE); returns fixed message.",
+          "Actualiza el BattlePlan de la fogata. Parámetros: fireId, content. Bloqueado durante duelo (PENDING/ACTIVE); devuelve mensaje fijo en ese caso.",
         inputSchema: updateBattlePlanInputSchema,
       },
       wrapToolHandler((args) =>
